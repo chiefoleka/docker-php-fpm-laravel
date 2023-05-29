@@ -1,0 +1,1 @@
+# PHP-FPM 8.1 Docker Image for Laravel
