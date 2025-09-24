@@ -1,6 +1,19 @@
 # Based on https://github.com/serversideup/docker-php
 FROM serversideup/php:7.4-fpm-nginx
 
+USER root
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    libxml2-dev  \ 
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    libwebp-dev; \
+    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
+    docker-php-ext-install -j"$(nproc)" gd exif soap;
+RUN install-php-extensions soap gd exif
+
 ENV HEALTHCHECK_PATH=healthcheck \
     NGINX_SERVER_PORT=80 \
     PHP_FPM_PM_MAX_CHILDREN=275 \
@@ -18,6 +31,7 @@ ENV HEALTHCHECK_PATH=healthcheck \
     PHP_SESSION_COOKIE_SECURE=false \
     PHP_UPLOAD_MAX_FILE_SIZE="1024M"
 
+USER www-data
 RUN mkdir -p /etc/nginx/conf.d
 
 COPY --chmod=755 common/entrypoint.d/ /etc/entrypoint.d/
