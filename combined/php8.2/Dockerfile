@@ -11,11 +11,12 @@ RUN set -eux; \
     libfreetype6-dev \
     libwebp-dev; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
-    docker-php-ext-install -j"$(nproc)" gd exif soap;
-RUN install-php-extensions soap gd exif
+    docker-php-ext-install -j"$(nproc)" gd exif soap bcmath;
+RUN install-php-extensions soap gd exif bcmath
 
 ENV HEALTHCHECK_PATH=healthcheck \
     NGINX_SERVER_PORT=80 \
+    PHP_ERROR_LOG="/var/log/php/error.log" \
     PHP_FPM_PM_MAX_CHILDREN=275 \
     PHP_FPM_PM_START_SERVERS=2 \
     PHP_FPM_PM_MIN_SPARE_SERVERS=1 \
