@@ -5,13 +5,21 @@ USER root
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
+    git \
     libxml2-dev  \ 
     libjpeg62-turbo-dev \
     libpng-dev \
     libfreetype6-dev \
+    xz-utils \
+    ca-certificates \
     libwebp-dev; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
-    docker-php-ext-install -j"$(nproc)" gd exif soap bcmath;
+    docker-php-ext-install -j"$(nproc)" gd exif soap bcmath mysqli;
+
+ARG PHPCONF_PATH=/usr/local/etc/php/conf.d
+RUN yes | pecl install rdkafka
+RUN echo "extension=rdkafka.so" > ${PHPCONF_PATH}/rdkafka.ini
+
 RUN install-php-extensions soap gd exif bcmath
 
 ENV HEALTHCHECK_PATH=healthcheck \
@@ -20,11 +28,11 @@ ENV HEALTHCHECK_PATH=healthcheck \
     PHP_FPM_PM_MAX_CHILDREN=275 \
     PHP_FPM_PM_START_SERVERS=2 \
     PHP_FPM_PM_MIN_SPARE_SERVERS=1 \
-    PHP_FPM_PM_MAX_SPARE_SERVERS=64\
+    PHP_FPM_PM_MAX_SPARE_SERVERS=64 \
     PHP_FPM_PM_MAX_REQUESTS=2000 \
     PHP_MEMORY_LIMIT="2048M" \
     PHP_OPCACHE_ENABLE="1" \
-    PHP_OPCACHE_INTERNED_STRINGS_BUFFER="8" \
+    PHP_OPCACHE_INTERNED_STRINGS_BUFFER="64" \
     PHP_OPCACHE_MAX_ACCELERATED_FILES="20000" \
     PHP_OPCACHE_MEMORY_CONSUMPTION="512" \
     PHP_OPCACHE_REVALIDATE_FREQ="2" \
