@@ -17,6 +17,12 @@ RUN set -eux; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
     docker-php-ext-install -j"$(nproc)" gd exif soap bcmath mysqli;
 
+RUN apt-get install -y \
+    clamav \
+    clamav-daemon \
+    clamav-freshclam; \
+    rm -rf /var/lib/apt/lists/*
+
 ARG PHPCONF_PATH=/usr/local/etc/php/conf.d
 RUN yes | pecl install rdkafka
 RUN echo "extension=rdkafka.so" > ${PHPCONF_PATH}/rdkafka.ini
@@ -46,7 +52,19 @@ ENV HEALTHCHECK_PATH=healthcheck \
     PHP_OPCACHE_REVALIDATE_FREQ="2" \
     PHP_POST_MAX_SIZE="1024M" \
     PHP_SESSION_COOKIE_SECURE=false \
-    PHP_UPLOAD_MAX_FILE_SIZE="1024M"
+    PHP_UPLOAD_MAX_FILE_SIZE="1024M" \
+    CLAMAV_PATH=/usr/bin/clamdscan
+
+RUN mkdir -p /var/run/clamav && \
+    chown -R clamav:clamav /var/run/clamav && \
+    chmod 775 /var/run/clamav && \
+    usermod -a -G clamav www-data
+
+RUN set -eux; \
+    sed -i 's|^LogFile .*|#LogFile disabled for container stdout logging|' /etc/clamav/clamd.conf; \
+    sed -i 's|^UpdateLogFile .*|#UpdateLogFile disabled for container stdout logging|' /etc/clamav/freshclam.conf; \
+    mkdir -p /var/log/clamav; \
+    chmod 2775 /var/lib/clamav /var/run/clamav /var/log/clamav
 
 USER www-data
 RUN mkdir -p /etc/nginx/conf.d
@@ -55,6 +73,8 @@ COPY --chmod=755 common/entrypoint.d/ /etc/entrypoint.d/
 COPY --chmod=755 common/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --chmod=755 common/nginx/http.conf.template /etc/nginx/site-opts.d/http.conf.template
 COPY --chmod=755 common/s6-overlay/check /etc/s6-overlay/s6-rc.d/nginx/data/check
+COPY --chmod=755 common/s6-overlay/clamd /etc/s6-overlay/s6-rc.d/clamd
+COPY --chmod=755 common/s6-overlay/freshclam /etc/s6-overlay/s6-rc.d/freshclam
 
 RUN rm /etc/nginx/site-opts.d/https.conf.template
 

@@ -58,4 +58,17 @@ docker pull chiefoleka/php-fpm-83-laravel:0.1.0
 docker pull chiefoleka/php-fpm-83-laravel:0.1.0-rdkafka
 ```
 
+To use clamav in your image:
+```bash
+FROM chiefoleka/php-fpm-74-laravel:0.1.6-nginx
+
+USER root
+RUN touch /etc/s6-overlay/s6-rc.d/user/contents.d/clamd; \
+    touch /etc/s6-overlay/s6-rc.d/user/contents.d/freshclam
+
+USER www-data
+
+RUN freshclam || true
+```
+
 Cheers!
